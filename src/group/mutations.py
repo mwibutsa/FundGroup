@@ -1,4 +1,3 @@
-
 import random
 from datetime import timedelta
 
@@ -150,7 +149,7 @@ class GrantGroupPermission(graphene.Mutation):
 
         group = Group.objects.get(pk=group_id)
 
-        if not current_user.has_group_permission('grant', group):
+        if not current_user.has_group_permission('grant permission', group):
             raise GraphQLError("You are not allowed to grant permission to other users.")
 
         permission = Permission.objects.get(pk=permission_id)
@@ -161,8 +160,9 @@ class GrantGroupPermission(graphene.Mutation):
 
         if permission_exists is not None:
             raise GraphQLError(
-                f"User {user.first_name or user.email} already has\
-                    {permission.name} permission on {group.name}")
+                f"User {user.first_name or user.email} already has {permission.name} " +
+                f"permission on group {group.name}"
+            )
 
         user_permission = UserGroupPermission.objects.create(
             group=group, user=user, permission=permission)
@@ -183,7 +183,7 @@ class RevokeGroupPermission(graphene.Mutation):
         current_user = info.context.user
         group = Group.objects.get(pk=group_id)
 
-        if not current_user.has_group_permission('grant', group):
+        if not current_user.has_group_permission('grant permission', group):
             raise GraphQLError("You are not allowed to revoke permissions from other users.")
 
         permission = Permission.objects.get(pk=permission_id)
@@ -194,16 +194,17 @@ class RevokeGroupPermission(graphene.Mutation):
 
         if existing_permission is None:
             raise GraphQLError(
-                f"User {user.first_name or user.email} doesn't have\
-                    {permission.name} permission on {group.name}")
+                f"User {user.first_name or user.email} doesn't have " +
+                f"{permission.name} permission on {group.name}")
 
-        return RevokeGroupPermission(message=f"Permission {permission.name}\
-            has been successfully\
-            revoked from {user.first_name or user.email}")
+        existing_permission.delete()
+
+        return RevokeGroupPermission(message=f"Permission {permission.name} " +
+                                     f"has been successfully revoked from {user.first_name}")
 
 
 class EditUserGroupPermission(graphene.Mutation):
-    edited_permission = graphene.Field()
+    edited_permission = graphene.Field(UserGroupPermissionType)
 
     class Arguments:
         user_permission_id = graphene.ID(required=True)
@@ -216,24 +217,24 @@ class EditUserGroupPermission(graphene.Mutation):
         current_user = info.context.user
         group = Group.objects.get(pk=group_id)
 
-        if not current_user.has_group_permission('grant', group):
+        if not current_user.has_group_permission('grant permission', group):
             raise GraphQLError(
                 f"You are not allowed to change permissions for fund group {group.name}.")
 
         user = get_user_model().objects.get(pk=user_id)
         # User's previous permission
-        existing_permission = UserGroupPermission.objects.filter(pk=user_permission_id)
-
-        if existing_permission.user is not user:
+        existing_permission = UserGroupPermission.objects.get(pk=user_permission_id)
+        # import pdb
+        # pdb.set_trace()
+        if existing_permission.user != user:
             raise GraphQLError(
-                f"This permission does not belong to the user\
-                    {user.first_name or user.email}")
+                f"This permission does not belong to the user {user.first_name or user.email}")
 
-        if existing_permission.group is not group:
+        if existing_permission.group != group:
             raise GraphQLError(
-                f"User {user.first_name or user.email} doesn't have\
-                    {existing_permission.permission.name}\
-                        permission on fund group {group.name}")
+                f"User {user.first_name or user.email} doesn't have" +
+                f"{existing_permission.permission.name}" +
+                f"permission on fund group {group.name}")
 
         new_permission = Permission.objects.get(pk=new_permission_id)
         existing_permission.permission = new_permission

@@ -1,7 +1,7 @@
 import graphene
 from graphene_django import DjangoObjectType
 
-from .models import GeneratedNumber, Group, UserGroupPermission
+from .models import GeneratedNumber, Group, Permission, UserGroupPermission
 
 
 class UserGroupPermissionType(DjangoObjectType):
@@ -21,3 +21,8 @@ class GeneratedNumberType(DjangoObjectType):
 
     class Meta:
         model = GeneratedNumber
+
+
+class PermissionType(DjangoObjectType):
+    class Meta:
+        model = Permission
