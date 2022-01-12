@@ -2,8 +2,9 @@
 import graphene
 from graphql import GraphQLError
 
-from .models import GeneratedNumber, Group
-from .types import GeneratedNumberType, GroupType
+from .models import GeneratedNumber, Group, Permission, UserGroupPermission
+from .types import (GeneratedNumberType, GroupType, PermissionType,
+                    UserGroupPermissionType)
 
 
 class Query(graphene.ObjectType):
@@ -11,6 +12,9 @@ class Query(graphene.ObjectType):
     fund_group = graphene.Field(GroupType, id=graphene.Int(required=True))
     generated_numbers = graphene.List(
         GeneratedNumberType, group_id=graphene.Int(), user_id=graphene.Int())
+    user_permission = graphene.List(UserGroupPermissionType, group_id=graphene.Int(
+        required=True), user_id=graphene.Int(required=True))
+    permissions = graphene.List(PermissionType)
 
     def resolve_fund_groups(self, _, limit=None, search=None):
         if search is not None and limit is not None:
@@ -41,3 +45,9 @@ class Query(graphene.ObjectType):
             filters['group_id'] = group_id
 
         return GeneratedNumber.objects.filter(**filters)
+
+    def resolve_user_permission(self, info, user_id, group_id):
+        return UserGroupPermission.objects.filter(group_id=group_id, user_id=user_id)
+
+    def resolve_permissions(self, info):
+        return Permission.objects.all()
