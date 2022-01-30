@@ -1,1 +1,1 @@
-web: gunicorn src.fundgroup.wsgi
+web: gunicorn fundgroup.wsgi
